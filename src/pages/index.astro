@@ -10,7 +10,10 @@ import '../styles.css';
   <body class="app">
     <header class="header">
       <h1>A&P Flashcards</h1>
-      <select id="deckSelect" aria-label="Select deck"></select>
+      <div class="header-controls">
+        <select id="deckSelect" aria-label="Select deck"></select>
+        <button id="configureBtn" class="btn">Configure Flashcards</button>
+      </div>
     </header>
 
     <main class="main">
@@ -36,6 +39,31 @@ import '../styles.css';
       </section>
     </main>
 
+    <!-- Configure Quiz Modal -->
+    <div id="configModal" class="modal" hidden>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Configure Flashcards</h2>
+          <button id="closeModal" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="select-all-controls">
+            <label>
+              <input type="checkbox" id="selectAllCheckbox" checked>
+              Select All / Deselect All
+            </label>
+          </div>
+          <div id="termsList" class="terms-list">
+            <!-- Terms will be populated dynamically -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelConfig" class="btn">Cancel</button>
+          <button id="applyConfig" class="btn good">Apply & Start Flashcards</button>
+        </div>
+      </div>
+    </div>
+
     <footer class="footer">
       <a href="/flashcards-astro-starter/decks/anatomy-bones.json" target="_blank" rel="noopener">View deck JSON</a>
       <span>· Offline-ready PWA</span>
@@ -43,8 +71,10 @@ import '../styles.css';
 
     <script type="module">
       const seenKeyPrefix = 'deck-progress-v1:';
+      const selectedCardsKeyPrefix = 'selected-cards-v1:';
       let cards = [];
       let activeCards = []; // Cards still being shown in current session
+      let selectedCards = []; // Cards selected for quiz (indices)
       let i = 0;
       let showingFront = true;
       let progress = {}; // index -> box (1..3)
@@ -65,6 +95,107 @@ import '../styles.css';
       function saveProgress(key, value) {
         localStorage.setItem(key, JSON.stringify(value));
       }
+      
+      function loadSelectedCards(deckFile) {
+        try {
+          const saved = JSON.parse(localStorage.getItem(selectedCardsKeyPrefix + deckFile) || '[]');
+          if (saved.length > 0 && cards.length > 0) {
+            // Filter out any indices that are no longer valid
+            return saved.filter(index => index < cards.length);
+          }
+          return cards.map((_, index) => index);
+        } catch {
+          return cards.map((_, index) => index);
+        }
+      }
+      
+      function saveSelectedCards(deckFile, selected) {
+        localStorage.setItem(selectedCardsKeyPrefix + deckFile, JSON.stringify(selected));
+      }
+      
+      function populateTermsList() {
+        const termsList = $('termsList');
+        termsList.innerHTML = '';
+        
+        cards.forEach((card, index) => {
+          const isSelected = selectedCards.includes(index);
+          const termItem = document.createElement('div');
+          termItem.className = 'term-item';
+          termItem.innerHTML = `
+            <input type="checkbox" id="term-${index}" ${isSelected ? 'checked' : ''}>
+            <label for="term-${index}" class="term-label">${card.answer}</label>
+          `;
+          
+          const checkbox = termItem.querySelector('input');
+          checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+              if (!selectedCards.includes(index)) {
+                selectedCards.push(index);
+              }
+            } else {
+              selectedCards = selectedCards.filter(i => i !== index);
+            }
+            updateSelectAllCheckbox();
+          });
+          
+          termsList.appendChild(termItem);
+        });
+        
+        updateSelectAllCheckbox();
+      }
+      
+      function updateSelectAllCheckbox() {
+        const selectAllCheckbox = $('selectAllCheckbox');
+        const totalCards = cards.length;
+        const selectedCount = selectedCards.length;
+        
+        selectAllCheckbox.checked = selectedCount === totalCards;
+        selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < totalCards;
+      }
+      
+      function toggleSelectAll() {
+        const selectAllCheckbox = $('selectAllCheckbox');
+        const shouldSelectAll = selectAllCheckbox.checked;
+        
+        selectedCards = shouldSelectAll ? cards.map((_, index) => index) : [];
+        
+        // Update individual checkboxes
+        cards.forEach((_, index) => {
+          const checkbox = $(`term-${index}`);
+          if (checkbox) checkbox.checked = shouldSelectAll;
+        });
+      }
+      
+      function showConfigModal() {
+        if (cards.length === 0) {
+          alert('Please wait for the deck to load first.');
+          return;
+        }
+        populateTermsList();
+        $('configModal').hidden = false;
+      }
+      
+      function hideConfigModal() {
+        $('configModal').hidden = true;
+      }
+      
+      function applyCardSelection() {
+        const currentDeck = $('deckSelect').value;
+        saveSelectedCards(currentDeck, selectedCards);
+        
+        // Update active cards to only include selected cards
+        activeCards = selectedCards.slice();
+        
+        // Reset to first card and update display
+        i = 0;
+        showingFront = true;
+        render();
+        updateStats();
+        updateResetButton();
+        
+        hideConfigModal();
+      }
+      
       function updateStats() {
         let b1=0,b2=0,b3=0;
         for (const k in progress) {
@@ -75,7 +206,7 @@ import '../styles.css';
         $('b2').textContent = b2;
         $('b3').textContent = b3;
         $('remaining').textContent = activeCards.length;
-        $('total').textContent = cards.length;
+        $('total').textContent = `${selectedCards.length}/${cards.length}`;
       }
 
       const BASE = '/flashcards-astro-starter/';
@@ -93,7 +224,8 @@ import '../styles.css';
       async function loadDeck(deckFile) {
         const res = await fetch(`${BASE}decks/${deckFile}`);
         cards = await res.json();
-        activeCards = cards.map((_, index) => index); // Start with all cards active
+        selectedCards = loadSelectedCards(deckFile);
+        activeCards = selectedCards.slice(); // Start with selected cards active
         i = 0; showingFront = true;
         progress = loadProgress(seenKeyPrefix + deckFile);
         render();
@@ -185,6 +317,11 @@ import '../styles.css';
       $('missed').onclick = () => { setBox(-2); next(); };
       $('next').onclick = () => next();
       $('reset').onclick = () => resetDeck();
+      $('configureBtn').onclick = () => showConfigModal();
+      $('closeModal').onclick = () => hideConfigModal();
+      $('cancelConfig').onclick = () => hideConfigModal();
+      $('applyConfig').onclick = () => applyCardSelection();
+      $('selectAllCheckbox').onclick = () => toggleSelectAll();
       $('card').onclick = () => { showingFront = !showingFront; render(); };
       $('card').onkeydown = (e) => {
         if (['Enter',' '].includes(e.key)) { e.preventDefault(); $('flip').click(); }
@@ -192,6 +329,7 @@ import '../styles.css';
         if (e.key === 'ArrowUp') $('knew').click();
         if (e.key === 'ArrowDown') $('missed').click();
         if (e.key === 'r' || e.key === 'R') $('reset').click();
+        if (e.key === 'Escape') hideConfigModal();
       };
 
       function updateResetButton() {
@@ -204,7 +342,7 @@ import '../styles.css';
       }
 
       function resetDeck() {
-        activeCards = cards.map((_, index) => index); // Restore all cards
+        activeCards = selectedCards.slice(); // Restore selected cards
         i = 0;
         showingFront = true;
         render();

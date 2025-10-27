@@ -16,4 +16,30 @@ body.app { margin:0; background:var(--bg); color:var(--fg); font-family: system-
 .btn.bad{ border-color: #7f1d1d; color:#fecaca; }
 .stats{ display:flex; gap:1rem; color:var(--muted); }
 .footer{ padding:1rem; color:var(--muted); text-align:center; border-top:1px solid #1f2937; }
+
+/* Header controls */
+.header-controls{ display:flex; gap:1rem; align-items:center; flex-wrap:wrap; }
+
+/* Modal styles */
+.modal{ position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; z-index:1000; }
+.modal[hidden]{ display:none !important; }
+.modal-content{ background:var(--bg); border:1px solid #1f2937; border-radius:1rem; width:min(600px, 90vw); max-height:80vh; display:flex; flex-direction:column; }
+.modal-header{ display:flex; justify-content:space-between; align-items:center; padding:1rem; border-bottom:1px solid #1f2937; }
+.modal-header h2{ margin:0; font-size:1.25rem; }
+.modal-close{ background:none; border:none; color:var(--muted); font-size:1.5rem; cursor:pointer; padding:0.25rem; }
+.modal-close:hover{ color:var(--fg); }
+.modal-body{ padding:1rem; overflow-y:auto; flex:1; }
+.modal-footer{ display:flex; gap:1rem; justify-content:flex-end; padding:1rem; border-top:1px solid #1f2937; }
+
+/* Select all controls */
+.select-all-controls{ padding:1rem; background:#0f172a; border:1px solid #1f2937; border-radius:0.5rem; margin-bottom:1rem; }
+.select-all-controls label{ display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:600; }
+
+/* Terms list */
+.terms-list{ display:flex; flex-direction:column; gap:0.5rem; max-height:300px; overflow-y:auto; }
+.term-item{ display:flex; align-items:center; gap:0.75rem; padding:0.75rem; background:#0f172a; border:1px solid #1f2937; border-radius:0.5rem; cursor:pointer; transition:border-color 0.2s; }
+.term-item:hover{ border-color:#64748b; }
+.term-item input[type="checkbox"]{ margin:0; }
+.term-label{ flex:1; cursor:pointer; }
+
 @media (min-width:768px){ .header h1{ font-size:1.5rem; } }
