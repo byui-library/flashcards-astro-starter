@@ -1,9 +1,8 @@
 // Flashcard utility functions extracted for testing
-// These functions mirror the logic from index.astro
+// These functions mirror the logic from index.astro (updated for optimized version)
 
 export class FlashcardUtils {
   static seenKeyPrefix = 'deck-progress-v1:';
-  static selectedCardsKeyPrefix = 'selected-cards-v1:';
 
   // Load progress from localStorage
   static loadProgress(key) {
@@ -19,32 +18,21 @@ export class FlashcardUtils {
     localStorage.setItem(key, JSON.stringify(value));
   }
 
-  // Load selected cards from localStorage
-  static loadSelectedCards(deckFile, totalCards = 0) {
-    try {
-      const saved = JSON.parse(localStorage.getItem(this.selectedCardsKeyPrefix + deckFile) || '[]');
-      if (saved.length > 0 && totalCards > 0) {
-        // Filter out any indices that are no longer valid
-        return saved.filter(index => index < totalCards);
-      }
-      return Array.from({ length: totalCards }, (_, index) => index);
-    } catch {
-      return Array.from({ length: totalCards }, (_, index) => index);
-    }
-  }
-
-  // Save selected cards to localStorage
-  static saveSelectedCards(deckFile, selected) {
-    localStorage.setItem(this.selectedCardsKeyPrefix + deckFile, JSON.stringify(selected));
-  }
-
   // Calculate box progression (Leitner system)
   static calculateBoxProgression(currentBox, delta) {
     return Math.max(1, Math.min(3, (currentBox || 1) + delta));
   }
 
-  // Update statistics
-  static calculateStats(progress, activeCards, selectedCards, totalCards) {
+  // Filter active cards based on progress (cards not yet mastered)
+  static filterActiveCards(cards, progress) {
+    const knownCardIndexes = Object.keys(progress).map(Number);
+    return cards
+      .map((_, i) => i)
+      .filter(i => !knownCardIndexes.includes(i) || progress[i] < 3);
+  }
+
+  // Update statistics - simplified for new architecture
+  static calculateStats(progress, activeCards, totalCards) {
     let b1 = 0, b2 = 0, b3 = 0;
     
     for (const k in progress) {
@@ -59,33 +47,12 @@ export class FlashcardUtils {
       box2: b2,
       box3: b3,
       remaining: activeCards.length,
-      total: `${selectedCards.length}/${totalCards}`
+      completed: totalCards - activeCards.length,
+      total: `${totalCards - activeCards.length}/${totalCards}`
     };
   }
 
-  // Validate card selection
-  static validateCardSelection(selectedCards, totalCards) {
-    if (!Array.isArray(selectedCards)) return false;
-    if (selectedCards.length === 0) return false;
-    
-    // Check all indices are valid
-    return selectedCards.every(index => 
-      typeof index === 'number' && 
-      index >= 0 && 
-      index < totalCards
-    );
-  }
-
-  // Toggle select all functionality
-  static toggleSelectAll(currentSelection, totalCards, selectAll) {
-    if (selectAll) {
-      return Array.from({ length: totalCards }, (_, index) => index);
-    } else {
-      return [];
-    }
-  }
-
-  // Remove card from active session
+  // Remove card from active session when answered correctly
   static removeCardFromSession(activeCards, cardIndex) {
     const index = activeCards.indexOf(cardIndex);
     if (index > -1) {
@@ -94,5 +61,34 @@ export class FlashcardUtils {
       return newActiveCards;
     }
     return activeCards;
+  }
+
+  // Check if card should be removed (reached box 3)
+  static shouldRemoveCard(progress, cardIndex) {
+    return progress[cardIndex] === 3;
+  }
+
+  // Reset progress completely
+  static resetProgress() {
+    return {};
+  }
+
+  // Validate card data structure (for static imports)
+  static validateCardData(card) {
+    return !!(
+      card &&
+      typeof card === 'object' &&
+      card.image &&
+      typeof card.answer === 'string' &&
+      card.answer.trim().length > 0
+    );
+  }
+
+  // Process image object (for Astro Image component)
+  static processImageSrc(imageObj) {
+    // Astro Image objects have a 'src' property
+    return imageObj && typeof imageObj === 'object' && imageObj.src 
+      ? imageObj.src 
+      : imageObj;
   }
 }
