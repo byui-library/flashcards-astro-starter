@@ -50,12 +50,16 @@ The flashcard decks are authored in CSV files and then converted to JavaScript m
 ### Images
 
 - Place images under `src/assets/images/`.
-- For best performance, Astro's built-in `astro:assets` feature automatically optimizes images (compression, resizing, modern formats like WebP).
+- For best performance, Astro's built-in `astro:assets` feature automatically optimizes images (compression, resizing, modern formats like WebP). The `src/pages/index.astro` file uses the `getImage` function to generate these optimized images at build time.
 
 ### PWA and Caching
 
-- The application is an offline-first PWA, configured in `astro.config.mjs`.
+- The application is an offline-first PWA, configured in `astro.config.mjs`. The `vite.config.ts` file is no longer used for PWA configuration.
 - The service worker caches the application shell for offline use.
+
+### Known Issues
+
+- The client-side script in `src/pages/index.astro` has a bug. It attempts to access `c.image.src` on a string, which will cause a runtime error. The code should be updated to use the `optimizedImagePaths` array to get the correct image source.
 
 ### Deployment
 
