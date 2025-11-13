@@ -3,6 +3,11 @@ import { Image } from 'astro:assets';
 import '../styles.css';
 import { anatomyBones } from '../data/anatomy-bones.js';
 
+// Available decks (can be expanded later)
+const availableDecks = [
+  { name: 'Anatomy: Bones', id: 'anatomy-bones', cards: anatomyBones }
+];
+
 const cards = anatomyBones;
 const deckName = 'Anatomy: Bones';
 ---
@@ -16,7 +21,10 @@ const deckName = 'Anatomy: Bones';
     <header class="header">
       <h1>A&P Flashcards</h1>
       <div class="header-controls">
-        <span id="deckName">{deckName}</span>
+        <select id="deckSelect" aria-label="Select deck">
+          <option value="anatomy-bones">Anatomy: Bones</option>
+        </select>
+        <button id="configureBtn" class="btn secondary">Configure Cards</button>
       </div>
     </header>
 
@@ -45,12 +53,43 @@ const deckName = 'Anatomy: Bones';
       </section>
     </main>
 
+    <!-- Card Configuration Modal -->
+    <div id="configModal" class="modal" hidden>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Configure Cards</h2>
+          <button id="modalClose" class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Select which cards to include in your study session:</p>
+          <div class="card-selection">
+            <div class="selection-controls">
+              <button id="selectAll" class="btn secondary">Select All</button>
+              <button id="deselectAll" class="btn secondary">Deselect All</button>
+            </div>
+            <div id="cardList" class="card-list">
+              <!-- Cards will be populated here -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelConfig" class="btn secondary">Cancel</button>
+          <button id="applyConfig" class="btn primary">Apply Selection</button>
+        </div>
+      </div>
+    </div>
+
     <footer class="footer">
       <span>Offline-ready PWA</span>
     </footer>
 
-    <script define:vars={{ cards, deckName }}>
+    <script define:vars={{ cards, deckName, availableDecks }}>
       const seenKeyPrefix = 'deck-progress-v1:';
+      const selectedCardsKeyPrefix = 'selected-cards-v1:';
+      
+      let currentDeck = availableDecks[0];
+      let allCards = currentDeck.cards;
+      let selectedCardIndices = new Set(); // Which cards are selected for study
       let activeCards = []; // Cards still being shown in current session
       let i = 0;
       let showingFront = true;
@@ -68,18 +107,38 @@ const deckName = 'Anatomy: Bones';
       function saveProgress(key, value) {
         localStorage.setItem(key, JSON.stringify(value));
       }
+
+      function loadSelectedCards(deckId) {
+        try {
+          const saved = JSON.parse(localStorage.getItem(selectedCardsKeyPrefix + deckId) || 'null');
+          return saved ? new Set(saved) : null;
+        } catch {
+          return null;
+        }
+      }
+      function saveSelectedCards(deckId, selectedSet) {
+        localStorage.setItem(selectedCardsKeyPrefix + deckId, JSON.stringify([...selectedSet]));
+      }
       
       function updateStats() {
         let b1=0,b2=0,b3=0;
+        const selectedIndices = [...selectedCardIndices];
+        
         for (const k in progress) {
-          const v = progress[k];
-          if (v===1) b1++; else if (v===2) b2++; else if (v===3) b3++;
+          const idx = parseInt(k);
+          if (selectedCardIndices.has(idx)) {
+            const v = progress[k];
+            if (v===1) b1++; else if (v===2) b2++; else if (v===3) b3++;
+          }
         }
+        
         $('b1').textContent = b1;
         $('b2').textContent = b2;
         $('b3').textContent = b3;
         $('remaining').textContent = activeCards.length;
-        $('total').textContent = `${cards.length - activeCards.length}/${cards.length}`;
+        
+        const completedSelected = selectedIndices.length - activeCards.length;
+        $('total').textContent = `${completedSelected}/${selectedIndices.length}`;
       }
 
       function render() {
@@ -90,7 +149,7 @@ const deckName = 'Anatomy: Bones';
           // All cards completed
           front.src = '';
           front.alt = 'All cards completed!';
-          back.textContent = 'You have successfully identified all of the slides! Push the reset button to start over.';
+          back.textContent = 'You have successfully identified all selected cards! Configure cards to select more or push reset to start over.';
           back.hidden = false;
           $('flip').disabled = true;
           $('knew').disabled = true;
@@ -103,7 +162,7 @@ const deckName = 'Anatomy: Bones';
         if (i >= activeCards.length) i = 0;
         
         const cardIndex = activeCards[i];
-        const c = cards[cardIndex];
+        const c = allCards[cardIndex];
         if (!c) return;
         
         front.src = c.image.src;
@@ -136,7 +195,7 @@ const deckName = 'Anatomy: Bones';
         
         updateStats();
         updateResetButton();
-        saveProgress(seenKeyPrefix + deckName, progress);
+        saveProgress(seenKeyPrefix + currentDeck.name, progress);
         
         // Check if we completed all cards and render accordingly
         if (activeCards.length === 0) {
@@ -174,8 +233,67 @@ const deckName = 'Anatomy: Bones';
 
       function resetDeck() {
         progress = {};
-        saveProgress(seenKeyPrefix + deckName, progress);
+        saveProgress(seenKeyPrefix + currentDeck.name, progress);
         boot();
+      }
+
+      function switchDeck(deckId) {
+        const deck = availableDecks.find(d => d.id === deckId);
+        if (!deck) return;
+        
+        currentDeck = deck;
+        allCards = deck.cards;
+        
+        // Load or initialize selected cards for this deck
+        const saved = loadSelectedCards(deckId);
+        if (saved) {
+          selectedCardIndices = saved;
+        } else {
+          // Default: select all cards
+          selectedCardIndices = new Set(allCards.map((_, i) => i));
+          saveSelectedCards(deckId, selectedCardIndices);
+        }
+        
+        boot();
+      }
+
+      function showConfigModal() {
+        populateCardList();
+        $('configModal').hidden = false;
+      }
+
+      function hideConfigModal() {
+        $('configModal').hidden = true;
+      }
+
+      function populateCardList() {
+        const cardList = $('cardList');
+        cardList.innerHTML = '';
+        
+        allCards.forEach((card, index) => {
+          const div = document.createElement('div');
+          div.className = 'card-item';
+          
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.id = `card-${index}`;
+          checkbox.checked = selectedCardIndices.has(index);
+          checkbox.onchange = () => {
+            if (checkbox.checked) {
+              selectedCardIndices.add(index);
+            } else {
+              selectedCardIndices.delete(index);
+            }
+          };
+          
+          const label = document.createElement('label');
+          label.htmlFor = `card-${index}`;
+          label.textContent = card.answer;
+          
+          div.appendChild(checkbox);
+          div.appendChild(label);
+          cardList.appendChild(div);
+        });
       }
 
       function next() {
@@ -187,11 +305,15 @@ const deckName = 'Anatomy: Bones';
 
       // boot
       function boot() {
-        progress = loadProgress(seenKeyPrefix + deckName);
+        progress = loadProgress(seenKeyPrefix + currentDeck.name);
+        
+        // Filter cards based on selection and progress
+        const selectedIndices = [...selectedCardIndices];
         const knownCardIndexes = Object.keys(progress).map(Number);
-        activeCards = cards
-          .map((_, i) => i)
-          .filter(i => !knownCardIndexes.includes(i) || progress[i] < 3);
+        
+        activeCards = selectedIndices.filter(i => {
+          return !knownCardIndexes.includes(i) || progress[i] < 3;
+        });
         
         i = 0;
         showingFront = true;
@@ -200,7 +322,37 @@ const deckName = 'Anatomy: Bones';
         updateResetButton();
       }
 
-      boot();
+      // Event listeners for new functionality
+      $('deckSelect').onchange = (e) => switchDeck(e.target.value);
+      $('configureBtn').onclick = showConfigModal;
+      $('modalClose').onclick = hideConfigModal;
+      $('cancelConfig').onclick = hideConfigModal;
+      
+      $('selectAll').onclick = () => {
+        selectedCardIndices = new Set(allCards.map((_, i) => i));
+        populateCardList();
+      };
+      
+      $('deselectAll').onclick = () => {
+        selectedCardIndices = new Set();
+        populateCardList();
+      };
+      
+      $('applyConfig').onclick = () => {
+        saveSelectedCards(currentDeck.id, selectedCardIndices);
+        hideConfigModal();
+        boot();
+      };
+
+      // Close modal on escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !$('configModal').hidden) {
+          hideConfigModal();
+        }
+      });
+
+      // Initialize
+      switchDeck('anatomy-bones');
     </script>
   </body>
 </html>
