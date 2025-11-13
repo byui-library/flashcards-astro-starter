@@ -1,5 +1,10 @@
 ---
+import { Image } from 'astro:assets';
 import '../styles.css';
+import { anatomyBones } from '../data/anatomy-bones.js';
+
+const cards = anatomyBones;
+const deckName = 'Anatomy: Bones';
 ---
 <html lang="en">
   <head>
@@ -11,14 +16,15 @@ import '../styles.css';
     <header class="header">
       <h1>A&P Flashcards</h1>
       <div class="header-controls">
-        <select id="deckSelect" aria-label="Select deck"></select>
-        <button id="configureBtn" class="btn">Configure Flashcards</button>
+        <span id="deckName">{deckName}</span>
       </div>
     </header>
 
     <main class="main">
       <div id="card" class="card" tabindex="0" aria-live="polite">
-        <img id="front" alt="" />
+        <div id="front-wrapper">
+            <Image src={cards[0].image} alt={cards[0].alt} />
+        </div>
         <div id="back" class="back" hidden></div>
       </div>
 
@@ -39,51 +45,18 @@ import '../styles.css';
       </section>
     </main>
 
-    <!-- Configure Quiz Modal -->
-    <div id="configModal" class="modal" hidden>
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Configure Flashcards</h2>
-          <button id="closeModal" class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="select-all-controls">
-            <label>
-              <input type="checkbox" id="selectAllCheckbox" checked>
-              Select All / Deselect All
-            </label>
-          </div>
-          <div id="termsList" class="terms-list">
-            <!-- Terms will be populated dynamically -->
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button id="cancelConfig" class="btn">Cancel</button>
-          <button id="applyConfig" class="btn good">Apply & Start Flashcards</button>
-        </div>
-      </div>
-    </div>
-
     <footer class="footer">
-      <a href="/flashcards-astro-starter/decks/anatomy-bones.json" target="_blank" rel="noopener">View deck JSON</a>
-      <span>· Offline-ready PWA</span>
+      <span>Offline-ready PWA</span>
     </footer>
 
-    <script type="module">
+    <script define:vars={{ cards, deckName }}>
       const seenKeyPrefix = 'deck-progress-v1:';
-      const selectedCardsKeyPrefix = 'selected-cards-v1:';
-      let cards = [];
       let activeCards = []; // Cards still being shown in current session
-      let selectedCards = []; // Cards selected for quiz (indices)
       let i = 0;
       let showingFront = true;
       let progress = {}; // index -> box (1..3)
 
       const $ = (id) => document.getElementById(id);
-
-      const decks = [
-        { name: 'Anatomy: Muscles', file: 'anatomy-bones.json' }
-      ];
 
       function loadProgress(key) {
         try {
@@ -96,106 +69,6 @@ import '../styles.css';
         localStorage.setItem(key, JSON.stringify(value));
       }
       
-      function loadSelectedCards(deckFile) {
-        try {
-          const saved = JSON.parse(localStorage.getItem(selectedCardsKeyPrefix + deckFile) || '[]');
-          if (saved.length > 0 && cards.length > 0) {
-            // Filter out any indices that are no longer valid
-            return saved.filter(index => index < cards.length);
-          }
-          return cards.map((_, index) => index);
-        } catch {
-          return cards.map((_, index) => index);
-        }
-      }
-      
-      function saveSelectedCards(deckFile, selected) {
-        localStorage.setItem(selectedCardsKeyPrefix + deckFile, JSON.stringify(selected));
-      }
-      
-      function populateTermsList() {
-        const termsList = $('termsList');
-        termsList.innerHTML = '';
-        
-        cards.forEach((card, index) => {
-          const isSelected = selectedCards.includes(index);
-          const termItem = document.createElement('div');
-          termItem.className = 'term-item';
-          termItem.innerHTML = `
-            <input type="checkbox" id="term-${index}" ${isSelected ? 'checked' : ''}>
-            <label for="term-${index}" class="term-label">${card.answer}</label>
-          `;
-          
-          const checkbox = termItem.querySelector('input');
-          checkbox.addEventListener('change', () => {
-            if (checkbox.checked) {
-              if (!selectedCards.includes(index)) {
-                selectedCards.push(index);
-              }
-            } else {
-              selectedCards = selectedCards.filter(i => i !== index);
-            }
-            updateSelectAllCheckbox();
-          });
-          
-          termsList.appendChild(termItem);
-        });
-        
-        updateSelectAllCheckbox();
-      }
-      
-      function updateSelectAllCheckbox() {
-        const selectAllCheckbox = $('selectAllCheckbox');
-        const totalCards = cards.length;
-        const selectedCount = selectedCards.length;
-        
-        selectAllCheckbox.checked = selectedCount === totalCards;
-        selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < totalCards;
-      }
-      
-      function toggleSelectAll() {
-        const selectAllCheckbox = $('selectAllCheckbox');
-        const shouldSelectAll = selectAllCheckbox.checked;
-        
-        selectedCards = shouldSelectAll ? cards.map((_, index) => index) : [];
-        
-        // Update individual checkboxes
-        cards.forEach((_, index) => {
-          const checkbox = $(`term-${index}`);
-          if (checkbox) checkbox.checked = shouldSelectAll;
-        });
-      }
-      
-      function showConfigModal() {
-        if (cards.length === 0) {
-          alert('Please wait for the deck to load first.');
-          return;
-        }
-        populateTermsList();
-        $('configModal').hidden = false;
-      }
-      
-      function hideConfigModal() {
-        $('configModal').hidden = true;
-      }
-      
-      function applyCardSelection() {
-        const currentDeck = $('deckSelect').value;
-        saveSelectedCards(currentDeck, selectedCards);
-        
-        // Update active cards to only include selected cards
-        activeCards = selectedCards.slice();
-        
-        // Reset to first card and update display
-        i = 0;
-        showingFront = true;
-        render();
-        updateStats();
-        updateResetButton();
-        
-        hideConfigModal();
-      }
-      
       function updateStats() {
         let b1=0,b2=0,b3=0;
         for (const k in progress) {
@@ -206,50 +79,15 @@ import '../styles.css';
         $('b2').textContent = b2;
         $('b3').textContent = b3;
         $('remaining').textContent = activeCards.length;
-        $('total').textContent = `${selectedCards.length}/${cards.length}`;
-      }
-
-      const BASE = '/flashcards-astro-starter/';
-
-      function resolvePath(p) {
-        if (!p) return p;
-        // If already includes the base, return as-is
-        if (p.startsWith(BASE)) return p;
-        // Absolute paths like '/images/..' should be prefixed with BASE (remove trailing slash on BASE)
-        if (p.startsWith('/')) return BASE.replace(/\/$/, '') + p;
-        // Relative paths are returned unchanged
-        return p;
-      }
-
-      async function loadDeck(deckFile) {
-        const res = await fetch(`${BASE}decks/${deckFile}`);
-        cards = await res.json();
-        selectedCards = loadSelectedCards(deckFile);
-        activeCards = selectedCards.slice(); // Start with selected cards active
-        i = 0; showingFront = true;
-        progress = loadProgress(seenKeyPrefix + deckFile);
-        render();
-        fillDeckSelect(deckFile);
-        updateStats();
-        updateResetButton();
-      }
-
-      function fillDeckSelect(current) {
-        const sel = $('deckSelect');
-        sel.innerHTML = '';
-        for (const d of decks) {
-          const opt = document.createElement('option');
-          opt.value = d.file; opt.textContent = d.name;
-          if (d.file === current) opt.selected = true;
-          sel.appendChild(opt);
-        }
-        sel.onchange = () => loadDeck(sel.value);
+        $('total').textContent = `${cards.length - activeCards.length}/${cards.length}`;
       }
 
       function render() {
+        const front = document.querySelector('#front-wrapper img');
+        const back = $('back');
+
         if (activeCards.length === 0) {
           // All cards completed
-          const front = $('front'), back = $('back');
           front.src = '';
           front.alt = 'All cards completed!';
           back.textContent = 'You have successfully identified all of the slides! Push the reset button to start over.';
@@ -268,8 +106,7 @@ import '../styles.css';
         const c = cards[cardIndex];
         if (!c) return;
         
-        const front = $('front'), back = $('back');
-        front.src = resolvePath(c.image);
+        front.src = c.image.src;
         front.alt = c.alt || c.answer || 'Flashcard image';
         back.textContent = c.answer;
         back.hidden = showingFront;
@@ -299,7 +136,7 @@ import '../styles.css';
         
         updateStats();
         updateResetButton();
-        saveProgress(seenKeyPrefix + $('deckSelect').value, progress);
+        saveProgress(seenKeyPrefix + deckName, progress);
         
         // Check if we completed all cards and render accordingly
         if (activeCards.length === 0) {
@@ -317,11 +154,6 @@ import '../styles.css';
       $('missed').onclick = () => { setBox(-2); next(); };
       $('next').onclick = () => next();
       $('reset').onclick = () => resetDeck();
-      $('configureBtn').onclick = () => showConfigModal();
-      $('closeModal').onclick = () => hideConfigModal();
-      $('cancelConfig').onclick = () => hideConfigModal();
-      $('applyConfig').onclick = () => applyCardSelection();
-      $('selectAllCheckbox').onclick = () => toggleSelectAll();
       $('card').onclick = () => { showingFront = !showingFront; render(); };
       $('card').onkeydown = (e) => {
         if (['Enter',' '].includes(e.key)) { e.preventDefault(); $('flip').click(); }
@@ -329,12 +161,11 @@ import '../styles.css';
         if (e.key === 'ArrowUp') $('knew').click();
         if (e.key === 'ArrowDown') $('missed').click();
         if (e.key === 'r' || e.key === 'R') $('reset').click();
-        if (e.key === 'Escape') hideConfigModal();
       };
 
       function updateResetButton() {
         const resetBtn = $('reset');
-        if (activeCards.length === 0 || activeCards.length < cards.length) {
+        if (activeCards.length < cards.length) {
           resetBtn.hidden = false;
         } else {
           resetBtn.hidden = true;
@@ -342,12 +173,9 @@ import '../styles.css';
       }
 
       function resetDeck() {
-        activeCards = selectedCards.slice(); // Restore selected cards
-        i = 0;
-        showingFront = true;
-        render();
-        updateStats();
-        updateResetButton();
+        progress = {};
+        saveProgress(seenKeyPrefix + deckName, progress);
+        boot();
       }
 
       function next() {
@@ -358,7 +186,21 @@ import '../styles.css';
       }
 
       // boot
-      loadDeck('anatomy-bones.json');
+      function boot() {
+        progress = loadProgress(seenKeyPrefix + deckName);
+        const knownCardIndexes = Object.keys(progress).map(Number);
+        activeCards = cards
+          .map((_, i) => i)
+          .filter(i => !knownCardIndexes.includes(i) || progress[i] < 3);
+        
+        i = 0;
+        showingFront = true;
+        render();
+        updateStats();
+        updateResetButton();
+      }
+
+      boot();
     </script>
   </body>
 </html>
