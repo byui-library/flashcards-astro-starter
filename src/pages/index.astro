@@ -1,5 +1,5 @@
 ---
-import { Image } from 'astro:assets';
+import { Image, getImage } from 'astro:assets';
 import '../styles.css';
 import { anatomyBones } from '../data/anatomy-bones.js';
 
@@ -10,6 +10,24 @@ const availableDecks = [
 
 const cards = anatomyBones;
 const deckName = 'Anatomy: Bones';
+
+// Generate optimized image paths for all cards at build time
+const optimizedImagePaths = await Promise.all(cards.map(async (card) => {
+  const optimizedImage = await getImage({
+    src: card.image, 
+    width: 400, 
+    height: 400, 
+    format: 'webp'
+  });
+  return optimizedImage.src;
+}));
+
+const firstImage = await getImage({
+  src: cards[0].image, 
+  width: 400, 
+  height: 400, 
+  format: 'webp'
+});
 ---
 <html lang="en">
   <head>
@@ -31,7 +49,7 @@ const deckName = 'Anatomy: Bones';
     <main class="main">
       <div id="card" class="card" tabindex="0" aria-live="polite">
         <div id="front-wrapper">
-            <Image src={cards[0].image} alt={cards[0].alt} />
+            <img src={firstImage.src} alt={cards[0].alt} width="400" height="400" />
         </div>
         <div id="back" class="back" hidden></div>
       </div>
@@ -83,7 +101,7 @@ const deckName = 'Anatomy: Bones';
       <span>Offline-ready PWA</span>
     </footer>
 
-    <script define:vars={{ cards, deckName, availableDecks }}>
+    <script define:vars={{ cards, deckName, availableDecks, optimizedImagePaths }}>
       const seenKeyPrefix = 'deck-progress-v1:';
       const selectedCardsKeyPrefix = 'selected-cards-v1:';
       
@@ -165,7 +183,8 @@ const deckName = 'Anatomy: Bones';
         const c = allCards[cardIndex];
         if (!c) return;
         
-        front.src = c.image.src;
+        // Use the optimized image path from the map
+        front.src = optimizedImagePaths[cardIndex];
         front.alt = c.alt || c.answer || 'Flashcard image';
         back.textContent = c.answer;
         back.hidden = showingFront;
