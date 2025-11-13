@@ -34,11 +34,19 @@ npm run test:ui
   - Data validation
   - Error handling
 
-- **`tests/modal-functionality.test.js`** - Tests for UI interactions
-  - Modal state management
-  - Card selection interface
-  - Keyboard shortcuts
-  - Statistics updates
+- **`tests/modal-functionality.test.js`** - Tests for deck selection and card configuration (18 tests)
+  - Deck switching and multi-deck progress tracking
+  - Card selection configuration and persistence
+  - Modal interface functionality
+  - Statistics calculation for selected cards
+  - Complete workflow integration tests
+
+- **`tests/deck-selection-ui.test.js`** - Tests for UI components and DOM interactions (15 tests)
+  - Deck selector dropdown functionality
+  - Configuration modal show/hide mechanics
+  - Card list population with checkboxes
+  - Modal control buttons and event handling
+  - Keyboard interactions and event listeners
 
 ### Test Coverage Areas
 
@@ -148,7 +156,9 @@ Consider adding:
 ## 🎉 Success Metrics
 
 Current test suite provides:
-- ✅ **37 passing tests** across 3 test files
-- ✅ **Core logic coverage** for all major functions
-- ✅ **Fast execution** (~1.3s full suite)
-- ✅ **Reliable mocking** for browser APIs
+- ✅ **76 passing tests** across 4 test files
+- ✅ **100% statement coverage** with 95.83% branch coverage
+- ✅ **Comprehensive deck selection testing** including UI components
+- ✅ **Card configuration functionality** fully tested
+- ✅ **Fast execution** (~1.7s full suite)
+- ✅ **Reliable mocking** for DOM APIs and localStorage
