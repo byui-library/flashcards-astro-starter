@@ -1,0 +1,23 @@
+---
+export interface Props {
+  initialImage: {
+    src: string;
+    alt: string;
+  };
+  class?: string;
+}
+
+const { initialImage, class: className } = Astro.props;
+---
+
+<div id="card" class={`card ${className || ''}`} tabindex="0" aria-live="polite">
+  <div id="front-wrapper">
+    <img 
+      src={initialImage.src} 
+      alt={initialImage.alt} 
+      width="400" 
+      height="400" 
+    />
+  </div>
+  <div id="back" class="back" hidden></div>
+</div>

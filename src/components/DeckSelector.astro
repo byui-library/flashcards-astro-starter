@@ -1,0 +1,26 @@
+---
+export interface Props {
+  decks: Array<{
+    id: string;
+    name: string;
+  }>;
+  defaultDeckId?: string;
+  class?: string;
+}
+
+const { decks, defaultDeckId, class: className } = Astro.props;
+---
+
+<div class={`header-controls ${className || ''}`}>
+  <select id="deckSelect" aria-label="Select deck">
+    {decks.map(deck => (
+      <option 
+        value={deck.id}
+        selected={deck.id === defaultDeckId}
+      >
+        {deck.name}
+      </option>
+    ))}
+  </select>
+  <button id="configureBtn" class="btn secondary">Configure Cards</button>
+</div>

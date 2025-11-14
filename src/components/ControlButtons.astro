@@ -1,0 +1,15 @@
+---
+export interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<div class={`controls ${className || ''}`}>
+  <button id="flip" class="btn">Flip</button>
+  <button id="knew" class="btn good">I knew it</button>
+  <button id="missed" class="btn bad">I missed it</button>
+  <button id="next" class="btn">Next ➜</button>
+  <button id="reset" class="btn" hidden>Reset Deck</button>
+</div>

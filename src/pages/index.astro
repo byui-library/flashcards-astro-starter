@@ -1,7 +1,14 @@
 ---
-import { Image, getImage } from 'astro:assets';
+import { getImage } from 'astro:assets';
 import '../styles.css';
 import { anatomyBones } from '../data/anatomy-bones.js';
+
+// Import components
+import StatsDisplay from '../components/StatsDisplay.astro';
+import ControlButtons from '../components/ControlButtons.astro';
+import Flashcard from '../components/Flashcard.astro';
+import DeckSelector from '../components/DeckSelector.astro';
+import ConfigModal from '../components/ConfigModal.astro';
 
 // Available decks (can be expanded later)
 const availableDecks = [
@@ -38,340 +45,39 @@ const firstImage = await getImage({
   <body class="app">
     <header class="header">
       <h1>A&P Flashcards</h1>
-      <div class="header-controls">
-        <select id="deckSelect" aria-label="Select deck">
-          <option value="anatomy-bones">Anatomy: Bones</option>
-        </select>
-        <button id="configureBtn" class="btn secondary">Configure Cards</button>
-      </div>
+      <DeckSelector 
+        decks={availableDecks.map(deck => ({ id: deck.id, name: deck.name }))} 
+        defaultDeckId="anatomy-bones" 
+      />
     </header>
 
     <main class="main">
-      <div id="card" class="card" tabindex="0" aria-live="polite">
-        <div id="front-wrapper">
-            <img src={firstImage.src} alt={cards[0].alt} width="400" height="400" />
-        </div>
-        <div id="back" class="back" hidden></div>
-      </div>
+      <Flashcard 
+        initialImage={{ src: firstImage.src, alt: cards[0].alt }} 
+      />
 
-      <div class="controls">
-        <button id="flip" class="btn">Flip</button>
-        <button id="knew" class="btn good">I knew it</button>
-        <button id="missed" class="btn bad">I missed it</button>
-        <button id="next" class="btn">Next ➜</button>
-        <button id="reset" class="btn" hidden>Reset Deck</button>
-      </div>
+      <ControlButtons />
 
-      <section class="stats">
-        <div>Box 1: <span id="b1">0</span></div>
-        <div>Box 2: <span id="b2">0</span></div>
-        <div>Box 3: <span id="b3">0</span></div>
-        <div>Remaining: <span id="remaining">0</span></div>
-        <div>Total: <span id="total">0</span></div>
-      </section>
+      <StatsDisplay />
     </main>
 
-    <!-- Card Configuration Modal -->
-    <div id="configModal" class="modal" hidden>
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Configure Cards</h2>
-          <button id="modalClose" class="modal-close" aria-label="Close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p>Select which cards to include in your study session:</p>
-          <div class="card-selection">
-            <div class="selection-controls">
-              <button id="selectAll" class="btn secondary">Select All</button>
-              <button id="deselectAll" class="btn secondary">Deselect All</button>
-            </div>
-            <div id="cardList" class="card-list">
-              <!-- Cards will be populated here -->
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button id="cancelConfig" class="btn secondary">Cancel</button>
-          <button id="applyConfig" class="btn primary">Apply Selection</button>
-        </div>
-      </div>
-    </div>
+    <ConfigModal />
 
     <footer class="footer">
       <span>Offline-ready PWA</span>
     </footer>
 
+    <script src="../scripts/flashcard-app.js"></script>
     <script define:vars={{ cards, deckName, availableDecks, optimizedImagePaths }}>
-      const seenKeyPrefix = 'deck-progress-v1:';
-      const selectedCardsKeyPrefix = 'selected-cards-v1:';
-      
-      let currentDeck = availableDecks[0];
-      let allCards = currentDeck.cards;
-      let selectedCardIndices = new Set(); // Which cards are selected for study
-      let activeCards = []; // Cards still being shown in current session
-      let i = 0;
-      let showingFront = true;
-      let progress = {}; // index -> box (1..3)
-
-      const $ = (id) => document.getElementById(id);
-
-      function loadProgress(key) {
-        try {
-          return JSON.parse(localStorage.getItem(key) || '{}');
-        } catch {
-          return {};
-        }
-      }
-      function saveProgress(key, value) {
-        localStorage.setItem(key, JSON.stringify(value));
-      }
-
-      function loadSelectedCards(deckId) {
-        try {
-          const saved = JSON.parse(localStorage.getItem(selectedCardsKeyPrefix + deckId) || 'null');
-          return saved ? new Set(saved) : null;
-        } catch {
-          return null;
-        }
-      }
-      function saveSelectedCards(deckId, selectedSet) {
-        localStorage.setItem(selectedCardsKeyPrefix + deckId, JSON.stringify([...selectedSet]));
-      }
-      
-      function updateStats() {
-        let b1=0,b2=0,b3=0;
-        const selectedIndices = [...selectedCardIndices];
-        
-        for (const k in progress) {
-          const idx = parseInt(k);
-          if (selectedCardIndices.has(idx)) {
-            const v = progress[k];
-            if (v===1) b1++; else if (v===2) b2++; else if (v===3) b3++;
-          }
-        }
-        
-        $('b1').textContent = b1;
-        $('b2').textContent = b2;
-        $('b3').textContent = b3;
-        $('remaining').textContent = activeCards.length;
-        
-        const completedSelected = selectedIndices.length - activeCards.length;
-        $('total').textContent = `${completedSelected}/${selectedIndices.length}`;
-      }
-
-      function render() {
-        const front = document.querySelector('#front-wrapper img');
-        const back = $('back');
-
-        if (activeCards.length === 0) {
-          // All cards completed
-          front.src = '';
-          front.alt = 'All cards completed!';
-          back.textContent = 'You have successfully identified all selected cards! Configure cards to select more or push reset to start over.';
-          back.hidden = false;
-          $('flip').disabled = true;
-          $('knew').disabled = true;
-          $('missed').disabled = true;
-          $('next').disabled = true;
-          return;
-        }
-
-        // Ensure i is within bounds of activeCards
-        if (i >= activeCards.length) i = 0;
-        
-        const cardIndex = activeCards[i];
-        const c = allCards[cardIndex];
-        if (!c) return;
-        
-        // Use the optimized image path from the map
-        front.src = optimizedImagePaths[cardIndex];
-        front.alt = c.alt || c.answer || 'Flashcard image';
-        back.textContent = c.answer;
-        back.hidden = showingFront;
-        
-        // Re-enable buttons
-        $('flip').disabled = false;
-        $('knew').disabled = false;
-        $('missed').disabled = false;
-        $('next').disabled = false;
-      }
-
-      function setBox(delta) {
-        if (activeCards.length === 0) return;
-        
-        const cardIndex = activeCards[i];
-        const val = Math.max(1, Math.min(3, (progress[cardIndex]||1) + delta));
-        progress[cardIndex] = val;
-        
-        // If user got it right (delta > 0), remove from active cards
-        if (delta > 0) {
-          activeCards.splice(i, 1);
-          // Adjust index if we're at the end
-          if (i >= activeCards.length && activeCards.length > 0) {
-            i = 0;
-          }
-        }
-        
-        updateStats();
-        updateResetButton();
-        saveProgress(seenKeyPrefix + currentDeck.name, progress);
-        
-        // Check if we completed all cards and render accordingly
-        if (activeCards.length === 0) {
-          render(); // This will show the completion message
-        }
-      }
-
-      $('flip').onclick = () => { showingFront = !showingFront; render(); };
-      $('knew').onclick = () => { 
-        setBox(+1); 
-        if (activeCards.length > 0) {
-          next(); 
-        }
-      };
-      $('missed').onclick = () => { setBox(-2); next(); };
-      $('next').onclick = () => next();
-      $('reset').onclick = () => resetDeck();
-      $('card').onclick = () => { showingFront = !showingFront; render(); };
-      $('card').onkeydown = (e) => {
-        if (['Enter',' '].includes(e.key)) { e.preventDefault(); $('flip').click(); }
-        if (e.key === 'ArrowRight') $('next').click();
-        if (e.key === 'ArrowUp') $('knew').click();
-        if (e.key === 'ArrowDown') $('missed').click();
-        if (e.key === 'r' || e.key === 'R') $('reset').click();
-      };
-
-      function updateResetButton() {
-        const resetBtn = $('reset');
-        if (activeCards.length < cards.length) {
-          resetBtn.hidden = false;
-        } else {
-          resetBtn.hidden = true;
-        }
-      }
-
-      function resetDeck() {
-        progress = {};
-        saveProgress(seenKeyPrefix + currentDeck.name, progress);
-        boot();
-      }
-
-      function switchDeck(deckId) {
-        const deck = availableDecks.find(d => d.id === deckId);
-        if (!deck) return;
-        
-        currentDeck = deck;
-        allCards = deck.cards;
-        
-        // Load or initialize selected cards for this deck
-        const saved = loadSelectedCards(deckId);
-        if (saved) {
-          selectedCardIndices = saved;
-        } else {
-          // Default: select all cards
-          selectedCardIndices = new Set(allCards.map((_, i) => i));
-          saveSelectedCards(deckId, selectedCardIndices);
-        }
-        
-        boot();
-      }
-
-      function showConfigModal() {
-        populateCardList();
-        $('configModal').hidden = false;
-      }
-
-      function hideConfigModal() {
-        $('configModal').hidden = true;
-      }
-
-      function populateCardList() {
-        const cardList = $('cardList');
-        cardList.innerHTML = '';
-        
-        allCards.forEach((card, index) => {
-          const div = document.createElement('div');
-          div.className = 'card-item';
-          
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.id = `card-${index}`;
-          checkbox.checked = selectedCardIndices.has(index);
-          checkbox.onchange = () => {
-            if (checkbox.checked) {
-              selectedCardIndices.add(index);
-            } else {
-              selectedCardIndices.delete(index);
-            }
-          };
-          
-          const label = document.createElement('label');
-          label.htmlFor = `card-${index}`;
-          label.textContent = card.answer;
-          
-          div.appendChild(checkbox);
-          div.appendChild(label);
-          cardList.appendChild(div);
+      // Initialize the flashcard application
+      document.addEventListener('DOMContentLoaded', () => {
+        new window.FlashcardApp({
+          cards,
+          deckName,
+          availableDecks,
+          optimizedImagePaths
         });
-      }
-
-      function next() {
-        if (activeCards.length === 0) return;
-        i = (i + 1) % activeCards.length;
-        showingFront = true;
-        render();
-      }
-
-      // boot
-      function boot() {
-        progress = loadProgress(seenKeyPrefix + currentDeck.name);
-        
-        // Filter cards based on selection and progress
-        const selectedIndices = [...selectedCardIndices];
-        const knownCardIndexes = Object.keys(progress).map(Number);
-        
-        activeCards = selectedIndices.filter(i => {
-          return !knownCardIndexes.includes(i) || progress[i] < 3;
-        });
-        
-        i = 0;
-        showingFront = true;
-        render();
-        updateStats();
-        updateResetButton();
-      }
-
-      // Event listeners for new functionality
-      $('deckSelect').onchange = (e) => switchDeck(e.target.value);
-      $('configureBtn').onclick = showConfigModal;
-      $('modalClose').onclick = hideConfigModal;
-      $('cancelConfig').onclick = hideConfigModal;
-      
-      $('selectAll').onclick = () => {
-        selectedCardIndices = new Set(allCards.map((_, i) => i));
-        populateCardList();
-      };
-      
-      $('deselectAll').onclick = () => {
-        selectedCardIndices = new Set();
-        populateCardList();
-      };
-      
-      $('applyConfig').onclick = () => {
-        saveSelectedCards(currentDeck.id, selectedCardIndices);
-        hideConfigModal();
-        boot();
-      };
-
-      // Close modal on escape key
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !$('configModal').hidden) {
-          hideConfigModal();
-        }
       });
-
-      // Initialize
-      switchDeck('anatomy-bones');
     </script>
   </body>
 </html>

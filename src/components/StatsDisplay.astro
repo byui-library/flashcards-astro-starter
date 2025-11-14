@@ -1,0 +1,16 @@
+---
+export interface Props {
+  id?: string;
+  class?: string;
+}
+
+const { id = "stats", class: className } = Astro.props;
+---
+
+<section id={id} class={`stats ${className || ''}`}>
+  <div>Box 1: <span id="b1">0</span></div>
+  <div>Box 2: <span id="b2">0</span></div>
+  <div>Box 3: <span id="b3">0</span></div>
+  <div>Remaining: <span id="remaining">0</span></div>
+  <div>Total: <span id="total">0</span></div>
+</section>

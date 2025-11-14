@@ -37,6 +37,14 @@ The flashcard decks are authored in CSV files and then converted to JavaScript m
 
 ## Development Conventions
 
+### Component-Based Architecture
+
+The application has been refactored into a component-based architecture using Astro components. This separates the UI into smaller, reusable pieces, making the codebase easier to maintain and understand. The main page (`src/pages/index.astro`) is now composed of several components from the `src/components/` directory.
+
+### Client-Side Logic
+
+All client-side JavaScript logic has been moved from inline `<script>` tags to a dedicated file: `src/scripts/flashcard-app.js`. The logic is encapsulated in a `FlashcardApp` class, which is instantiated in `src/pages/index.astro`. This separation of concerns makes the code more organized and easier to debug.
+
 ### Authoring Decks
 
 - Create or edit CSV files in the `./decks` directory.
@@ -56,10 +64,6 @@ The flashcard decks are authored in CSV files and then converted to JavaScript m
 
 - The application is an offline-first PWA, configured in `astro.config.mjs`. The `vite.config.ts` file is no longer used for PWA configuration.
 - The service worker caches the application shell for offline use.
-
-### Known Issues
-
-- The client-side script in `src/pages/index.astro` has a bug. It attempts to access `c.image.src` on a string, which will cause a runtime error. The code should be updated to use the `optimizedImagePaths` array to get the correct image source.
 
 ### Deployment
 
