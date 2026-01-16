@@ -24,33 +24,36 @@ Open http://localhost:4321
 
 Edit CSV files in `./decks`. Columns:
 
-- `image` (path under `/public`, e.g. `/images/skull_lateral.svg`)
+- `image` (filename in `src/assets/images/`, e.g. `skull_lateral.svg`)
 - `answer` (what the card reveals on flip)
 - `alt` (accessible alt text for the image)
 - `deck` (logical grouping)
 
-Export from Excel/Sheets as CSV and drop into `./decks`. On build, files are converted to JSON in `public/decks/*.json`.
+Export from Excel/Sheets as CSV and drop into `./decks`. On build, files are converted to JavaScript modules in `src/data/`.
 
 Example row:
 
 ```csv
-/images/skull_lateral.svg,Temporal bone,"Temporal bone (lateral view)",Bones
+Anterior Drawer ACL sprain.jpeg,Anterior Drawer/ACL sprain,Anterior Drawer Test for ACL,Knee
 ```
+
+**Important**: Avoid apostrophes and special characters in image filenames (use `Lachmans` instead of `Lachman's`).
 
 ## Add more decks
 
-Add another CSV to `./decks`, then **register it** in `src/pages/index.astro` in the `decks` array:
+Add another CSV to `./decks` and place images in `src/assets/images/`, then run `npm run build`. The system **automatically discovers and imports** new decks - no manual edits needed!
 
-```js
-const decks = [
-  { name: 'Anatomy: Bones', file: 'anatomy-bones.json' },
-  { name: 'Anatomy: Muscles', file: 'anatomy-muscles.json' }
-];
-```
+Current decks:
+- Foot/Ankle Tests
+- Hip Tests  
+- Knee Tests
+- Shoulder Tests
 
 ## Images
 
-Place images under `public/images/...`. For best performance, keep width ≤ 1024px and use SVG or compressed PNG/JPG. The PWA caches images for offline use.
+Place images in `src/assets/images/`. Astro optimizes them at build time to 400×400 WebP format. For best results, use high-quality source images. The PWA caches optimized images for offline use.
+
+**Naming**: Avoid apostrophes and special characters in filenames (use underscores or remove them).
 
 ## Progress & spaced repetition
 
