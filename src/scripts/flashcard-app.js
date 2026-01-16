@@ -14,7 +14,7 @@ class FlashcardApp {
     
     // Store config
     this.availableDecks = config.availableDecks;
-    this.optimizedImagePaths = config.optimizedImagePaths;
+    this.optimizedImagePathsByDeck = config.optimizedImagePathsByDeck;
     
     this.init();
   }
@@ -97,7 +97,8 @@ class FlashcardApp {
     const card = this.allCards[cardIndex];
     if (!card) return;
 
-    front.src = this.optimizedImagePaths[cardIndex];
+    const currentDeckImages = this.optimizedImagePathsByDeck[this.currentDeck.id];
+    front.src = currentDeckImages[cardIndex];
     front.alt = card.alt || card.answer || 'Flashcard image';
     back.textContent = card.answer;
     back.hidden = this.showingFront;

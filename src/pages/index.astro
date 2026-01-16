@@ -41,6 +41,9 @@ import { ShoulderTests } from '../data/Shoulder_tests.js';
 import { HipTests } from '../data/Hip_tests.js';
 import { KneeTests } from '../data/Knee_tests.js';
 import { ShoulderTests } from '../data/Shoulder_tests.js';
+import { HipTests } from '../data/Hip_tests.js';
+import { KneeTests } from '../data/Knee_tests.js';
+import { ShoulderTests } from '../data/Shoulder_tests.js';
 import { cardiologyBasics } from '../data/cardiology-basics.js';
 import { cardiologyBasics } from '../data/cardiology-basics.js';
 
@@ -78,19 +81,24 @@ if (availableDecks.length === 0) {
   throw new Error('No valid deck configurations found');
 }
 
+// Generate optimized image paths for ALL decks at build time
+const optimizedImagePathsByDeck = {};
+for (const deck of availableDecks) {
+  optimizedImagePathsByDeck[deck.id] = await Promise.all(
+    deck.cards.map(async (card) => {
+      const optimizedImage = await getImage({
+        src: card.image, 
+        width: 400, 
+        height: 400, 
+        format: 'webp'
+      });
+      return optimizedImage.src;
+    })
+  );
+}
+
 const cards = defaultDeck.cards;
 const deckName = defaultDeck.name;
-
-// Generate optimized image paths for all cards at build time
-const optimizedImagePaths = await Promise.all(cards.map(async (card) => {
-  const optimizedImage = await getImage({
-    src: card.image, 
-    width: 400, 
-    height: 400, 
-    format: 'webp'
-  });
-  return optimizedImage.src;
-}));
 
 const firstImage = await getImage({
   src: cards[0].image, 
@@ -131,14 +139,14 @@ const firstImage = await getImage({
     </footer>
 
     <script src="../scripts/flashcard-app.js"></script>
-    <script define:vars={{ cards, deckName, availableDecks, optimizedImagePaths }}>
+    <script define:vars={{ cards, deckName, availableDecks, optimizedImagePathsByDeck }}>
       // Initialize the flashcard application
       document.addEventListener('DOMContentLoaded', () => {
         new window.FlashcardApp({
           cards,
           deckName,
           availableDecks,
-          optimizedImagePaths
+          optimizedImagePathsByDeck
         });
       });
     </script>
