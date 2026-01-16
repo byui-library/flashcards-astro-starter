@@ -38,6 +38,9 @@ import { ShoulderTests } from '../data/Shoulder_tests.js';
 import { HipTests } from '../data/Hip_tests.js';
 import { KneeTests } from '../data/Knee_tests.js';
 import { ShoulderTests } from '../data/Shoulder_tests.js';
+import { HipTests } from '../data/Hip_tests.js';
+import { KneeTests } from '../data/Knee_tests.js';
+import { ShoulderTests } from '../data/Shoulder_tests.js';
 import { cardiologyBasics } from '../data/cardiology-basics.js';
 import { cardiologyBasics } from '../data/cardiology-basics.js';
 
@@ -100,11 +103,11 @@ const firstImage = await getImage({
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>A&P Flashcards</title>
+    <title>Marvelous Martin's Special Tests Flashcards</title>
   </head>
   <body class="app">
     <header class="header">
-      <h1>A&P Flashcards</h1>
+      <h1>Marvelous Martin's Special Tests Flashcards</h1>
       <DeckSelector 
         decks={availableDecks.map(deck => ({ id: deck.id, name: deck.name }))} 
         defaultDeckId={defaultDeck.id} 

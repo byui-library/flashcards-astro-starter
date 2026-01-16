@@ -42,9 +42,9 @@ export default defineConfig({
       },
       includeAssets: ['**/*'],
       manifest: {
-        name: 'A&P Flashcards',
-        short_name: 'Flashcards',
-        description: 'Offline-first flashcards for anatomy & physiology',
+        name: 'Marvelous Martin\'s Special Tests Flashcards',
+        short_name: 'Special Tests',
+        description: 'Offline-first flashcards for special orthopedic tests',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
