@@ -15,6 +15,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/matjmiles\.github\.io\/flashcards-astro-starter\/decks\/.*/i,
