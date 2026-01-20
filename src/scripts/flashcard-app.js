@@ -74,13 +74,25 @@ class FlashcardApp {
     this.$('total').textContent = `${completedSelected}/${selectedIndices.length}`;
   }
 
+  // Celebration SVG for completion state (trophy icon)
+  getCompletionImage() {
+    return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+      <rect width="400" height="400" fill="#0f172a"/>
+      <circle cx="200" cy="180" r="120" fill="#1e3a5f" opacity="0.5"/>
+      <path d="M200 80 L220 140 L285 140 L232 178 L252 238 L200 200 L148 238 L168 178 L115 140 L180 140 Z" fill="#fbbf24" stroke="#f59e0b" stroke-width="3"/>
+      <circle cx="200" cy="160" r="30" fill="#fef3c7"/>
+      <text x="200" y="320" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#22c55e">🎉 Complete! 🎉</text>
+      <text x="200" y="355" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#94a3b8">All cards mastered</text>
+    </svg>`)}`;
+  }
+
   // Card rendering
   render() {
     const front = document.querySelector('#front-wrapper img');
     const back = this.$('back');
 
     if (this.activeCards.length === 0) {
-      front.src = '';
+      front.src = this.getCompletionImage();
       front.alt = 'All cards completed!';
       back.textContent = 'You have successfully identified all selected cards! Configure cards to select more or push reset to start over.';
       back.hidden = false;
