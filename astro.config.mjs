@@ -38,6 +38,17 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
               }
             }
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              }
+            }
           }
         ]
       },
@@ -46,7 +57,7 @@ export default defineConfig({
         name: 'Marvelous Martin\'s Special Tests Flashcards',
         short_name: 'Special Tests',
         description: 'Offline-first flashcards for special orthopedic tests',
-        theme_color: '#ffffff',
+        theme_color: '#006EB6',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/flashcards-astro-starter/',

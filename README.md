@@ -1,76 +1,90 @@
-# A&P Flashcards — Astro + PWA + CSV→JSON Starter
+# Special Tests Flashcards — Astro + PWA
 
-Offline-first flashcards for anatomy & physiology. Author decks in CSV, build produces JSON, deploy anywhere (Vercel/Netlify/GitHub Pages).
+Offline-first flashcards for orthopedic special tests, branded to BYU-Idaho standards. Author decks in CSV, build produces optimized static site, deploy anywhere.
 
 ## Quick start
 
 ```bash
-# 1) install
 npm i
-
-# 2) run dev
-npm run dev
-
-# 3) build (csv -> json, then static site)
-npm run build
-
-# 4) preview prod build
-npm run preview
+npm run dev        # http://localhost:4321/flashcards-astro-starter
+npm run build      # csv → JS modules → static site
+npm run preview    # preview production build
 ```
-
-Open http://localhost:4321
 
 ## Authoring decks
 
-Edit CSV files in `./decks`. Columns:
+Edit `decks/special tests exam 1.csv` (or add more CSVs). Columns:
 
-- `image` (filename in `src/assets/images/`, e.g. `skull_lateral.svg`)
-- `answer` (what the card reveals on flip)
-- `alt` (accessible alt text for the image)
-- `deck` (logical grouping)
+| Column | Description |
+|--------|-------------|
+| `image` | Filename in `src/assets/images/` (e.g. `Lachman_s.jpg`) |
+| `answer` | Test name / condition separated by `/` |
+| `alt` | Accessible alt text for the image |
+| `deck` | Deck grouping (e.g. `Knee`, `Shoulder`) |
 
-Export from Excel/Sheets as CSV and drop into `./decks`. On build, files are converted to JavaScript modules in `src/data/`.
+The build automatically groups rows by the `deck` column into separate deck modules. One CSV can produce multiple decks.
 
 Example row:
 
 ```csv
-Anterior Drawer ACL sprain.jpeg,Anterior Drawer/ACL sprain,Anterior Drawer Test for ACL,Knee
+Lachman_s.jpg,Lachman's Test/ACL sprain,Lachman's Test,Knee
 ```
 
-**Important**: Avoid apostrophes and special characters in image filenames (use `Lachmans` instead of `Lachman's`).
+**Image naming**: Avoid apostrophes and special characters in filenames (use underscores: `Lachman_s.jpg`).
 
-## Add more decks
+## Current decks (35 cards)
 
-Add another CSV to `./decks` and place images in `src/assets/images/`, then run `npm run build`. The system **automatically discovers and imports** new decks - no manual edits needed!
+- Foot/Ankle (5 cards)
+- Knee (11 cards)
+- Hip (5 cards)
+- Shoulder (14 cards)
 
-Current decks:
-- Foot/Ankle Tests
-- Hip Tests  
-- Knee Tests
-- Shoulder Tests
+## Build pipeline
+
+1. `scripts/build-decks.mjs` — Parses all CSVs, groups by `deck` column, generates one JS module per deck in `src/data/`
+2. `scripts/update-deck-imports.mjs` — Scans generated modules and auto-updates imports + config in `src/pages/index.astro`
+3. `astro build` — Builds static site, optimizes images to 400x400 WebP
+
+## Adding new cards or decks
+
+1. Add image to `src/assets/images/`
+2. Add a row to the CSV (or add a new CSV file)
+3. Run `npm run build`
+
+New deck values in the `deck` column automatically create new entries in the dropdown.
 
 ## Images
 
-Place images in `src/assets/images/`. Astro optimizes them at build time to 400×400 WebP format. For best results, use high-quality source images. The PWA caches optimized images for offline use.
+Place images in `src/assets/images/`. Astro optimizes them at build time to 400x400 WebP. The PWA caches optimized images for offline use.
 
-**Naming**: Avoid apostrophes and special characters in filenames (use underscores or remove them).
+## Branding
+
+The app follows [BYU-Idaho branding standards](https://www.byui.edu/branding/):
+
+- **Colors**: Brand Blue `#006EB6`, Dark Blue `#214491`, Light Blue `#A0D4ED`
+- **Fonts**: Source Sans 3 (UI/headlines), Source Serif 4 (card answers) — web alternatives to News Gothic and Minion
+- **PWA theme**: Brand Blue browser chrome
 
 ## Progress & spaced repetition
 
-Client-side Leitner-style boxes (1..3) are tracked in `localStorage` per-deck. No backend required. If you later want cross-device sync, you can add Supabase and persist the `progress` map per user.
+Client-side Leitner-style boxes (1–3) tracked in `localStorage` per-deck. No backend required.
 
-## PWA
+## Testing
 
-- Installable on mobile (Add to Home Screen)
-- Offline-first via `@vite-pwa/astro`
-- Cached routes: app shell, `/decks/*`, `/images/*`
+```bash
+npm test           # watch mode
+npm run test:run   # single run (CI)
+npm run test:coverage
+```
+
+107 tests across 7 test files including data integrity validation.
 
 ## Deploy
 
-- Push repo to GitHub, import into Vercel, **framework: Astro**
+- GitHub Pages: `https://matjmiles.github.io/flashcards-astro-starter`
 - Build command: `npm run build`
 - Output dir: `dist`
 
 ## License of media
 
-Only include media you’re licensed to use (OpenStax/Wikimedia CC-BY, public domain, or your own). Keep attribution within your course materials as needed.
+Only include media you're licensed to use (OpenStax/Wikimedia CC-BY, public domain, or your own).

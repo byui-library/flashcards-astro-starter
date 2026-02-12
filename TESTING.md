@@ -1,164 +1,58 @@
-# Flashcard Application Testing
+# Testing
 
-This project uses **Vitest** for unit testing, providing fast and reliable testing for the flashcard functionality.
+This project uses **Vitest** for unit and integration testing.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-# Run tests in watch mode (development)
-npm test
-
-# Run tests once (CI/production)
-npm run test:run
-
-# Run tests with coverage report
-npm run test:coverage
-
-# Run tests with UI interface
-npm run test:ui
+npm test              # watch mode (development)
+npm run test:run      # single run (CI)
+npm run test:coverage # coverage report
+npm run test:ui       # visual test interface
 ```
 
-## 📋 Test Structure
+## Test Files
 
-### Core Test Files
+| File | Tests | Purpose |
+|------|-------|---------|
+| `tests/flashcard-utils.test.js` | 33 | Core flashcard logic, Leitner algorithm, progress management |
+| `tests/modal-functionality.test.js` | 18 | Deck switching, card configuration, modal interface |
+| `tests/deck-selection-ui.test.js` | 15 | UI components, DOM interactions, keyboard events |
+| `tests/automated-deck-loading.test.js` | 14 | File filtering, name conversion, deck creation |
+| `tests/csv-conversion.test.js` | 10 | CSV parsing, data validation, error handling |
+| `tests/data-integrity.test.js` | 10 | CSV-to-image validation, orphan detection, deck grouping |
+| `tests/astro-integration.test.js` | 7 | Build simulation, dynamic imports, component props |
 
-- **`tests/flashcard-utils.test.js`** - Tests for core flashcard logic
-  - Progress management (localStorage)
-  - Card selection functionality  
-  - Leitner spaced repetition algorithm
-  - Statistics calculations
-  - Data validation
+**Total: 107 tests**
 
-- **`tests/csv-conversion.test.js`** - Tests for data processing
-  - CSV to JSON conversion
-  - Data validation
-  - Error handling
+## Coverage Areas
 
-- **`tests/modal-functionality.test.js`** - Tests for deck selection and card configuration (18 tests)
-  - Deck switching and multi-deck progress tracking
-  - Card selection configuration and persistence
-  - Modal interface functionality
-  - Statistics calculation for selected cards
-  - Complete workflow integration tests
+- **Progress Management** — localStorage persistence, cross-session integrity, corrupted data handling
+- **Leitner Algorithm** — Box progression (+1 correct, -2 incorrect), boundary conditions (boxes 1-3)
+- **Card Selection** — Individual select/deselect, select all, validation
+- **Session Management** — Active card filtering, reset, completion detection
+- **Data Processing** — CSV parsing with PapaParse, field validation
+- **Data Integrity** — Every CSV image exists on disk, no orphan images, valid deck grouping
 
-- **`tests/deck-selection-ui.test.js`** - Tests for UI components and DOM interactions (15 tests)
-  - Deck selector dropdown functionality
-  - Configuration modal show/hide mechanics
-  - Card list population with checkboxes
-  - Modal control buttons and event handling
-  - Keyboard interactions and event listeners
-
-### Test Coverage Areas
-
-✅ **Progress Management**
-- localStorage persistence
-- Cross-session data integrity
-- Error handling for corrupted data
-
-✅ **Leitner Algorithm**
-- Box progression logic (+1 for correct, -2 for incorrect)
-- Boundary conditions (boxes 1-3)
-- Statistics calculation
-
-✅ **Card Selection**
-- Individual card selection/deselection
-- Select all/deselect all functionality
-- Data validation and bounds checking
-
-✅ **Session Management**
-- Active card filtering
-- Reset functionality
-- Completion detection
-
-✅ **Data Processing**
-- CSV parsing with PapaParse
-- Field validation
-- Default value handling
-
-## 🛠️ Testing Utilities
+## Test Setup
 
 ### Mock Setup (`tests/setup.js`)
-- **localStorage Mock**: Simulates browser localStorage with Map-based storage
-- **fetch Mock**: For testing API calls
+- **localStorage Mock**: Map-based storage simulation
+- **fetch Mock**: For API call testing
 - **DOM Mocks**: Basic DOM element simulation
 
-### Utility Functions (`src/utils/flashcard-utils.js`)
-Extracted core logic for easier testing:
-- `loadProgress()` / `saveProgress()` - Progress persistence
-- `loadSelectedCards()` / `saveSelectedCards()` - Card selection
-- `calculateBoxProgression()` - Leitner algorithm
-- `validateCardSelection()` - Input validation
+### Configuration (`vitest.config.js`)
+- **Environment**: jsdom
+- **Globals**: Test functions available without imports
+- **Coverage**: v8 provider with HTML/JSON reports
 
-## 📊 Running Coverage
+## Running Coverage
 
 ```bash
 npm run test:coverage
 ```
 
-Generates coverage reports in:
-- **Terminal**: Summary view
-- **HTML**: `coverage/index.html` - Detailed interactive report
-- **JSON**: `coverage/coverage.json` - Machine-readable data
-
-## 🎯 Testing Best Practices
-
-### Unit Tests Focus On:
-- **Pure Functions**: Logic without side effects
-- **Data Transformations**: Input → processing → output
-- **Edge Cases**: Boundary conditions and error states
-- **Business Logic**: Leitner algorithm, card selection rules
-
-### Integration Points:
-- localStorage persistence
-- CSV data processing
-- Modal interactions
-- Statistics calculations
-
-## 🔧 Configuration
-
-### Vitest Config (`vitest.config.js`)
-- **Environment**: jsdom for DOM testing
-- **Globals**: Available test functions without imports
-- **Coverage**: v8 provider with HTML/JSON reports
-- **Setup**: Automatic mock initialization
-
-### Test Scripts (`package.json`)
-- `npm test` - Watch mode for development
-- `npm run test:run` - Single run for CI
-- `npm run test:ui` - Visual test interface
-- `npm run test:coverage` - Coverage analysis
-
-## 🚨 Common Issues
-
-### localStorage Mock
-If localStorage tests fail, ensure the mock in `tests/setup.js` properly implements:
-```javascript
-const store = new Map()
-getItem: (key) => store.get(key) || null
-setItem: (key, value) => store.set(key, value)
-```
-
-### Module Imports
-Use ES modules syntax consistently:
-```javascript
-import { describe, it, expect } from 'vitest'
-import { FlashcardUtils } from '../src/utils/flashcard-utils.js'
-```
-
-## 📈 Future Testing
-
-Consider adding:
-- **E2E Tests**: Full user journey testing with Playwright
-- **Visual Regression**: Screenshot comparison testing  
-- **Performance Tests**: Load time and interaction benchmarks
-- **Accessibility Tests**: Screen reader and keyboard navigation
-
-## 🎉 Success Metrics
-
-Current test suite provides:
-- ✅ **76 passing tests** across 4 test files
-- ✅ **100% statement coverage** with 95.83% branch coverage
-- ✅ **Comprehensive deck selection testing** including UI components
-- ✅ **Card configuration functionality** fully tested
-- ✅ **Fast execution** (~1.7s full suite)
-- ✅ **Reliable mocking** for DOM APIs and localStorage
+Reports generated in `coverage/`:
+- Terminal summary
+- HTML interactive report (`coverage/index.html`)
+- JSON machine-readable data
