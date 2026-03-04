@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.byui.edu)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nstyle: apply BYU-Idaho branding and update documentation\n\nRedesign UI to follow BYU-Idaho branding standards: Brand Blue header,\ninstitutional color palette, Source Sans 3 / Source Serif 4 web fonts,\nlight theme with branded card surfaces. Update PWA manifest theme color\nand add Google Fonts caching for offline support. Refresh all docs to\nreflect current project state.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}
