@@ -80,7 +80,7 @@ for (const [deckName, rows] of deckGroups) {
     imports.push(`import ${imageName} from '../assets/images/${imageFile}';`);
 
     const videoCell = (row.video || '').trim();
-    let videoLiteral = 'null';
+    let videoLiteral = 'null'; // emitted as a bare JS literal; overwritten with an import identifier when a video exists
     if (videoCell) {
       const videoName = `video${idx}`;
       const videoFile = videoCell.split('/').pop();
