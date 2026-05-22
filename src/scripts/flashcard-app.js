@@ -206,6 +206,28 @@ class FlashcardApp {
     this._toastTimer = setTimeout(() => toast.classList.remove('visible'), 2500);
   }
 
+  // Warm the runtime cache with all video URLs in the background
+  prefetchVideos() {
+    const urls = new Set();
+    for (const deckId of Object.keys(this.optimizedVideoPathsByDeck)) {
+      for (const url of this.optimizedVideoPathsByDeck[deckId] || []) {
+        if (url) urls.add(url);
+      }
+    }
+    if (urls.size === 0) return;
+
+    const queue = [...urls];
+    const concurrency = 2;
+    const next = () => {
+      const url = queue.shift();
+      if (!url) return;
+      fetch(url, { cache: 'default', credentials: 'same-origin' })
+        .catch(() => { /* swallow — runtime cache will warm on first play */ })
+        .finally(next);
+    };
+    for (let i = 0; i < concurrency; i++) next();
+  }
+
   // Progress management
   setBox(delta) {
     this.stopCardVideo();
@@ -425,6 +447,10 @@ class FlashcardApp {
   init() {
     this.setupEventListeners();
     this.switchDeck(this.availableDecks[0].id);
+
+    // Warm the cache after the app has settled
+    const schedule = window.requestIdleCallback || ((cb) => setTimeout(cb, 1000));
+    schedule(() => this.prefetchVideos());
   }
 }
 
