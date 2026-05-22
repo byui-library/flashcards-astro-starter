@@ -40,7 +40,7 @@ export default defineConfig({
             }
           },
           {
-            urlPattern: /\.mp4$/i,
+            urlPattern: /^https:\/\/matjmiles\.github\.io\/flashcards-astro-starter\/.*\.mp4$/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'videos-cache',
