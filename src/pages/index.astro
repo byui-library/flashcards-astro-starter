@@ -71,6 +71,12 @@ for (const deck of availableDecks) {
   );
 }
 
+// Build map of video paths per deck (null for image-only cards)
+const optimizedVideoPathsByDeck = {};
+for (const deck of availableDecks) {
+  optimizedVideoPathsByDeck[deck.id] = deck.cards.map(card => card.video || null);
+}
+
 const cards = defaultDeck.cards;
 const deckName = defaultDeck.name;
 
@@ -116,14 +122,15 @@ const firstImage = await getImage({
     </footer>
 
     <script src="../scripts/flashcard-app.js"></script>
-    <script define:vars={{ cards, deckName, availableDecks, optimizedImagePathsByDeck }}>
+    <script define:vars={{ cards, deckName, availableDecks, optimizedImagePathsByDeck, optimizedVideoPathsByDeck }}>
       // Initialize the flashcard application
       document.addEventListener('DOMContentLoaded', () => {
         new window.FlashcardApp({
           cards,
           deckName,
           availableDecks,
-          optimizedImagePathsByDeck
+          optimizedImagePathsByDeck,
+          optimizedVideoPathsByDeck
         });
       });
     </script>
