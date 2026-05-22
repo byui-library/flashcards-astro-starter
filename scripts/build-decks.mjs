@@ -79,9 +79,19 @@ for (const [deckName, rows] of deckGroups) {
     const imageFile = row.image.trim().split('/').pop();
     imports.push(`import ${imageName} from '../assets/images/${imageFile}';`);
 
+    const videoCell = (row.video || '').trim();
+    let videoLiteral = 'null';
+    if (videoCell) {
+      const videoName = `video${idx}`;
+      const videoFile = videoCell.split('/').pop();
+      imports.push(`import ${videoName} from '../assets/videos/${videoFile}';`);
+      videoLiteral = videoName;
+    }
+
     cardObjects.push(
       '  {\n' +
       `    image: ${imageName},\n` +
+      `    video: ${videoLiteral},\n` +
       `    answer: ${JSON.stringify(row.answer.trim())},\n` +
       `    alt: ${JSON.stringify((row.alt || '').trim())},\n` +
       `    deck: ${JSON.stringify(deckName)}\n` +

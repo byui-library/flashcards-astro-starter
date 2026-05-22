@@ -142,3 +142,28 @@ describe('Deck Data Validation', () => {
     expect(processedCard.alt).toBe('')
   })
 })
+
+describe('Video column handling', () => {
+  it('parses video column when present', async () => {
+    const csvContent = `image,answer,alt,deck,video
+Talor Tilt.jpg,Talar tilt: CFL Sprain,Talor Tilt,Foot/Ankle,Talor Tilt.mp4
+Lachman_s.jpg,Lachman,Lachman test,Knee,`
+
+    const Papa = await import('papaparse')
+    const result = Papa.parse(csvContent, { header: true, skipEmptyLines: true })
+
+    expect(result.errors).toHaveLength(0)
+    expect(result.data[0].video).toBe('Talor Tilt.mp4')
+    expect(result.data[1].video).toBe('')
+  })
+
+  it('treats missing video column as undefined per row', async () => {
+    const csvContent = `image,answer,alt,deck
+Lachman_s.jpg,Lachman,Lachman test,Knee`
+
+    const Papa = await import('papaparse')
+    const result = Papa.parse(csvContent, { header: true, skipEmptyLines: true })
+
+    expect(result.data[0].video).toBeUndefined()
+  })
+})
