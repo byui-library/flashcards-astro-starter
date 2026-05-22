@@ -18,9 +18,10 @@ Edit `decks/special tests exam 1.csv` (or add more CSVs). Columns:
 | Column | Description |
 |--------|-------------|
 | `image` | Filename in `src/assets/images/` (e.g. `Lachman_s.jpg`) |
-| `answer` | Test name / condition separated by `/` |
+| `answer` | Test name and condition, separated by `:` |
 | `alt` | Accessible alt text for the image |
 | `deck` | Deck grouping (e.g. `Knee`, `Shoulder`) |
+| `video` | *(Optional)* Filename in `src/assets/videos/` (e.g. `Talor Tilt.mp4`). Blank for image-only cards. |
 
 The build automatically groups rows by the `deck` column into separate deck modules. One CSV can produce multiple decks.
 
@@ -57,6 +58,38 @@ New deck values in the `deck` column automatically create new entries in the dro
 
 Place images in `src/assets/images/`. Astro optimizes them at build time to 400x400 WebP. The PWA caches optimized images for offline use.
 
+## Videos (optional, per-card)
+
+Cards may include an optional short demonstration video. Place MP4 files in `src/assets/videos/` and reference the filename in the `video` column of the CSV.
+
+**Behavior:**
+
+- Cards with a video show a small ▶ badge in the corner of the image.
+- Clicking the image or pressing `V` plays the video muted and looping in the same card slot.
+- The video stops and resets when the user flips, advances, switches decks, or resets.
+
+**Recommended export settings:**
+
+- Container: MP4
+- Codec: H.264 (baseline or main profile)
+- Audio: **strip** (videos play muted, so audio bytes are wasted)
+- Resolution: ≤ 400 px on the long edge
+- Frame rate: 24–30 fps
+- Duration: 3–8 seconds
+- File size: ≤ ~2 MB per clip
+
+**Offline caching:**
+
+Videos are runtime-cached by the PWA (not precached). After the app loads, all videos are silently fetched in the background to warm the cache. On subsequent visits — including offline — they play instantly.
+
+The video cache (`videos-cache`) is capped at 100 entries with a 1-year expiration. Sized against the ≤ 2 MB per-clip target above, that is roughly ~200 MB worst case. If you raise clip sizes well beyond the recommended target, watch browser storage quotas — at very large libraries you may want to lower the `maxEntries` cap in `astro.config.mjs` or restrict prefetch to the current deck.
+
+**Quick ffmpeg snippet for re-encoding:**
+
+```bash
+ffmpeg -i input.mov -an -vf "scale='min(400,iw)':-2" -c:v libx264 -profile:v main -crf 26 -preset slow -movflags +faststart output.mp4
+```
+
 ## Branding
 
 The app follows [BYU-Idaho branding standards](https://www.byui.edu/branding/):
@@ -78,6 +111,20 @@ npm run test:coverage
 ```
 
 107 tests across 7 test files including data integrity validation.
+
+### Manual video test checklist
+
+- [ ] Card with video shows ▶ badge
+- [ ] Card without video does not show badge
+- [ ] Click image on video card → video plays muted, loops
+- [ ] Press `V` on video card → same
+- [ ] Press `V` on image-only card → nothing happens
+- [ ] Flip / Next / Know / Missed → video stops and resets
+- [ ] Switching decks → video stops
+- [ ] Reset deck → video stops
+- [ ] Apply card-selection config → video stops
+- [ ] Offline (after one full visit): video plays without network
+- [ ] Offline + uncached video URL: image stays, toast appears, no crash
 
 ## Deploy
 
