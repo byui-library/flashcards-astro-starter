@@ -22,6 +22,9 @@ for (const file of csvFiles) {
 // Read all image files from src/assets/images/
 const imageFiles = fs.readdirSync(IMAGES_DIR)
 
+const VIDEOS_DIR = path.join(ROOT, 'src', 'assets', 'videos')
+const videoFiles = fs.existsSync(VIDEOS_DIR) ? fs.readdirSync(VIDEOS_DIR) : []
+
 describe('CSV data integrity', () => {
   it('should have at least one CSV file in decks/', () => {
     expect(csvFiles.length).toBeGreaterThan(0)
@@ -79,6 +82,32 @@ describe('Image file references', () => {
     const referencedImages = new Set(allRows.map(r => r.image.trim()))
     const orphans = imageFiles.filter(f => !referencedImages.has(f))
     expect(orphans, `Orphan images not in any CSV:\n${orphans.join('\n')}`).toEqual([])
+  })
+})
+
+describe('Video file references', () => {
+  it('every non-empty CSV video should exist on disk', () => {
+    const missing = []
+    for (const row of allRows) {
+      const videoFile = (row.video || '').trim()
+      if (videoFile && !videoFiles.includes(videoFile)) {
+        missing.push(`${videoFile} (from ${row._sourceFile})`)
+      }
+    }
+    expect(missing, `Missing videos:\n${missing.join('\n')}`).toEqual([])
+  })
+
+  it('every video on disk should be referenced in a CSV', () => {
+    const referencedVideos = new Set(
+      allRows.map(r => (r.video || '').trim()).filter(Boolean)
+    )
+    const orphans = videoFiles.filter(f => !referencedVideos.has(f))
+    expect(orphans, `Orphan videos not in any CSV:\n${orphans.join('\n')}`).toEqual([])
+  })
+
+  it('every video file should be an mp4', () => {
+    const nonMp4 = videoFiles.filter(f => !f.toLowerCase().endsWith('.mp4'))
+    expect(nonMp4, `Non-mp4 files in videos dir: ${nonMp4.join(', ')}`).toEqual([])
   })
 })
 
