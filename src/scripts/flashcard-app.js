@@ -139,7 +139,7 @@ class FlashcardApp {
     img.hidden = false;
 
     if (videoPath) {
-      if (video.src !== videoPath) video.src = videoPath;
+      if (video.getAttribute('src') !== videoPath) video.src = videoPath;
       video.hidden = true;
       badge.hidden = false;
     } else {
