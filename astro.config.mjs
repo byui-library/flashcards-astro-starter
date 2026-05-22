@@ -40,6 +40,17 @@ export default defineConfig({
             }
           },
           {
+            urlPattern: /\.mp4$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'videos-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              }
+            }
+          },
+          {
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
