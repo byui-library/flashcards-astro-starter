@@ -28,7 +28,7 @@ The build automatically groups rows by the `deck` column into separate deck modu
 Example row:
 
 ```csv
-Lachman_s.jpg,Lachman's Test/ACL sprain,Lachman's Test,Knee
+Lachman_s.jpg,Lachman's Test: ACL sprain,Lachman's Test,Knee,
 ```
 
 **Image naming**: Avoid apostrophes and special characters in filenames (use underscores: `Lachman_s.jpg`).
