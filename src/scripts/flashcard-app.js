@@ -15,7 +15,9 @@ class FlashcardApp {
     // Store config
     this.availableDecks = config.availableDecks;
     this.optimizedImagePathsByDeck = config.optimizedImagePathsByDeck;
-    
+    this.optimizedVideoPathsByDeck = config.optimizedVideoPathsByDeck || {};
+    this.videoPlaying = false;
+
     this.init();
   }
 
@@ -88,12 +90,15 @@ class FlashcardApp {
 
   // Card rendering
   render() {
-    const front = document.querySelector('#front-wrapper img');
+    const front = this.$('card-image') || document.querySelector('#front-wrapper img');
     const back = this.$('back');
 
     if (this.activeCards.length === 0) {
       front.src = this.getCompletionImage();
       front.alt = 'All cards completed!';
+      front.hidden = false;
+      this.$('card-video').hidden = true;
+      this.$('video-badge').hidden = true;
       back.textContent = 'You have successfully identified all selected cards! Configure cards to select more or push reset to start over.';
       back.hidden = false;
       this.$('flip').disabled = true;
@@ -109,9 +114,7 @@ class FlashcardApp {
     const card = this.allCards[cardIndex];
     if (!card) return;
 
-    const currentDeckImages = this.optimizedImagePathsByDeck[this.currentDeck.id];
-    front.src = currentDeckImages[cardIndex];
-    front.alt = card.alt || card.answer || 'Flashcard image';
+    this.setMedia(cardIndex);
     back.textContent = card.answer;
     back.hidden = this.showingFront;
 
@@ -121,8 +124,91 @@ class FlashcardApp {
     this.$('next').disabled = false;
   }
 
+  // Set image and video src for a card; show badge if card has video
+  setMedia(cardIndex) {
+    const card = this.allCards[cardIndex];
+    const img = this.$('card-image') || document.querySelector('#front-wrapper img');
+    const video = this.$('card-video');
+    const badge = this.$('video-badge');
+
+    const imagePath = this.optimizedImagePathsByDeck[this.currentDeck.id][cardIndex];
+    const videoPath = (this.optimizedVideoPathsByDeck[this.currentDeck.id] || [])[cardIndex] || null;
+
+    img.src = imagePath;
+    img.alt = card.alt || card.answer || 'Flashcard image';
+    img.hidden = false;
+
+    if (videoPath) {
+      if (video.src !== videoPath) video.src = videoPath;
+      video.hidden = true;
+      badge.hidden = false;
+    } else {
+      video.removeAttribute('src');
+      video.load();
+      video.hidden = true;
+      badge.hidden = true;
+    }
+    this.videoPlaying = false;
+  }
+
+  // Swap image -> video and start playback (loops, muted)
+  playCardVideo() {
+    const video = this.$('card-video');
+    if (!video.src || this.videoPlaying) return;
+
+    const img = this.$('card-image') || document.querySelector('#front-wrapper img');
+    const badge = this.$('video-badge');
+
+    img.hidden = true;
+    badge.hidden = true;
+    video.hidden = false;
+    this.videoPlaying = true;
+
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => this.handleVideoError());
+    }
+  }
+
+  // Stop video, reset, restore image and badge
+  stopCardVideo() {
+    if (!this.videoPlaying) return;
+    const video = this.$('card-video');
+    const img = this.$('card-image') || document.querySelector('#front-wrapper img');
+    const badge = this.$('video-badge');
+
+    video.pause();
+    video.currentTime = 0;
+    video.hidden = true;
+    img.hidden = false;
+    if (video.src) badge.hidden = false;
+    this.videoPlaying = false;
+  }
+
+  // Fallback: video errored (offline + uncached, codec issue, etc.)
+  handleVideoError() {
+    this.stopCardVideo();
+    this.showToast('Video not available offline yet.');
+  }
+
+  // Simple non-blocking toast
+  showToast(message) {
+    let toast = document.getElementById('app-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'app-toast';
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.add('visible');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => toast.classList.remove('visible'), 2500);
+  }
+
   // Progress management
   setBox(delta) {
+    this.stopCardVideo();
     if (this.activeCards.length === 0) return;
 
     const cardIndex = this.activeCards[this.currentIndex];
@@ -147,6 +233,7 @@ class FlashcardApp {
 
   // Navigation
   next() {
+    this.stopCardVideo();
     if (this.activeCards.length === 0) return;
     this.currentIndex = (this.currentIndex + 1) % this.activeCards.length;
     this.showingFront = true;
@@ -154,12 +241,14 @@ class FlashcardApp {
   }
 
   flip() {
+    this.stopCardVideo();
     this.showingFront = !this.showingFront;
     this.render();
   }
 
   // Deck management
   switchDeck(deckId) {
+    this.stopCardVideo();
     const deck = this.availableDecks.find(d => d.id === deckId);
     if (!deck) return;
 
@@ -178,6 +267,7 @@ class FlashcardApp {
   }
 
   resetDeck() {
+    this.stopCardVideo();
     this.progress = {};
     this.saveProgress(this.seenKeyPrefix + this.currentDeck.name, this.progress);
     this.boot();
@@ -243,6 +333,7 @@ class FlashcardApp {
   }
 
   applyConfiguration() {
+    this.stopCardVideo();
     this.saveSelectedCards(this.currentDeck.id, this.selectedCardIndices);
     this.hideConfigModal();
     this.boot();
@@ -283,8 +374,22 @@ class FlashcardApp {
     this.$('next').onclick = () => this.next();
     this.$('reset').onclick = () => this.resetDeck();
 
+    // Video badge and error handling
+    this.$('video-badge').onclick = (e) => {
+      e.stopPropagation();
+      this.playCardVideo();
+    };
+    this.$('card-video').addEventListener('error', () => this.handleVideoError());
+
     // Card click and keyboard
-    this.$('card').onclick = () => this.flip();
+    this.$('card').onclick = (e) => {
+      const img = this.$('card-image') || document.querySelector('#front-wrapper img');
+      if (e.target === img && !this.$('video-badge').hidden) {
+        this.playCardVideo();
+        return;
+      }
+      this.flip();
+    };
     this.$('card').onkeydown = (e) => {
       if (['Enter', ' '].includes(e.key)) {
         e.preventDefault();
@@ -294,6 +399,7 @@ class FlashcardApp {
       if (e.key === 'ArrowUp') this.$('knew').click();
       if (e.key === 'ArrowDown') this.$('missed').click();
       if (e.key === 'r' || e.key === 'R') this.resetDeck();
+      if (e.key === 'v' || e.key === 'V') this.playCardVideo();
     };
 
     // Deck selection
