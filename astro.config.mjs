@@ -8,7 +8,7 @@ export default defineConfig({
   vite: {
     server: { fs: { strict: false } },
   },
-  site: 'https://matjmiles.github.io',
+  site: 'https://byui-library.github.io',
   base: '/flashcards-astro-starter',
   integrations: [
     AstroPWA({
@@ -18,7 +18,7 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/matjmiles\.github\.io\/flashcards-astro-starter\/decks\/.*/i,
+            urlPattern: /^https:\/\/byui-library\.github\.io\/flashcards-astro-starter\/decks\/.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'decks-cache',
@@ -29,7 +29,7 @@ export default defineConfig({
             }
           },
           {
-            urlPattern: /^https:\/\/matjmiles\.github\.io\/flashcards-astro-starter\/images\/.*/i,
+            urlPattern: /^https:\/\/byui-library\.github\.io\/flashcards-astro-starter\/images\/.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'images-cache',
@@ -40,7 +40,7 @@ export default defineConfig({
             }
           },
           {
-            urlPattern: /^https:\/\/matjmiles\.github\.io\/flashcards-astro-starter\/.*\.mp4$/i,
+            urlPattern: /^https:\/\/byui-library\.github\.io\/flashcards-astro-starter\/.*\.mp4$/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'videos-cache',

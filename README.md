@@ -128,7 +128,7 @@ npm run test:coverage
 
 ## Deploy
 
-- GitHub Pages: `https://matjmiles.github.io/flashcards-astro-starter`
+- GitHub Pages: `https://byui-library.github.io/flashcards-astro-starter`
 - Build command: `npm run build`
 - Output dir: `dist`
 
