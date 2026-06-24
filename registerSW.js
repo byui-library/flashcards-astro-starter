@@ -1,1 +1,0 @@
-if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/flashcards-astro-starter/sw.js', { scope: '/flashcards-astro-starter/' })})}
